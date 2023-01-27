@@ -2,14 +2,20 @@ package script
 
 import (
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/alavrovinfb/fls-interpreter/pkg/messages"
 )
 
 var Body *Script
 
+func init() {
+	Body = NewScript().WithOutPut()
+}
+
 type Script struct {
 	Funcs map[string]*Func
+	Out   *[]interface{}
 }
 
 func NewScript() *Script {
@@ -18,62 +24,85 @@ func NewScript() *Script {
 	}
 }
 
-func (sc *Script) Execute(fName string, localVars map[string]interface{}) {
-	f := sc.Funcs[fName]
+func (s *Script) WithOutPut() *Script {
+	tmp := make([]interface{}, 0)
+	s.Out = &tmp
+	return s
+}
+
+func (s *Script) RestOut() {
+	s.WithOutPut()
+}
+
+func (sc *Script) Execute(fName string, localVars map[string]interface{}) error {
+	f, ok := sc.Funcs[fName]
+	if !ok {
+		return fmt.Errorf(messages.ErrFuncMissed, fName)
+	}
 	for _, c := range f.Commands {
 		if strings.HasPrefix(c.CMD, HASH) {
 			cRef := strings.TrimPrefix(c.CMD, HASH)
-			cmd := sc.Funcs[cRef]
-			fmt.Println("Referred cmd", cmd)
 			localVars = c.Params
-			sc.Execute(cRef, localVars)
+			if err := sc.Execute(cRef, localVars); err != nil {
+				return err
+			}
 		} else {
-			fmt.Println("Normal cmd", c.CMD)
 			c.ParentVars = localVars
-			if err := c.Do(); err != nil {
-				log.Println("error command executing")
+			if err := c.Do(sc.Out); err != nil {
+				return fmt.Errorf(messages.ErrExecution, err)
 			}
 		}
 	}
+
+	return nil
 }
 
-func Parse(doc map[string]interface{}) (*Variables, *Script) {
-	vars := NewVariables() //make(map[string]Value)
-	fns := NewScript()     //make(map[string]Func, 0)
+func Parse(doc map[string]interface{}, vars *Variables, fns *Script) error {
+	if vars == nil {
+		vars = NewVariables()
+	}
+	if fns == nil {
+		fns = NewScript().WithOutPut()
+	}
+	if _, ok := doc[InitFunc]; !ok {
+		return fmt.Errorf(messages.ErrInitMissed)
+	}
 	for n, v := range doc {
 		if v == nil {
-			log.Fatal("function body is nil")
+			return fmt.Errorf(messages.ErrBodyEmpty, v)
 		}
 		switch typedVal := v.(type) {
 		case float64:
 			vars.V[n] = Value(typedVal)
 		case []interface{}:
+			if len(typedVal) == 0 {
+				return fmt.Errorf(messages.ErrBodyEmpty, v)
+			}
 			c, err := ProcessFunc(n, typedVal)
 			if err != nil {
-				log.Println(err)
-				continue
+				return err
 			}
 			fns.Funcs[n] = NewFunc(n).Add(c)
 		default:
-			log.Printf("unknown type %s", n)
+			return fmt.Errorf(messages.ErrIncorrectType, typedVal, typedVal)
 		}
 	}
 
-	return vars, fns
+	return nil
 }
 
 func ProcessFunc(fnName string, rawCmds []interface{}) ([]Command, error) {
 	if len(rawCmds) == 0 {
-		return nil, fmt.Errorf("%s function body is empty", fnName)
+		return nil, fmt.Errorf(messages.ErrBodyEmpty, fnName)
 	}
 	cmds := make([]Command, 0)
 	for i, c := range rawCmds {
 		pMap, ok := c.(map[string]interface{})
 		if !ok {
-			return nil, fmt.Errorf("%s can't cast cmd params", fnName)
+			return nil, fmt.Errorf(messages.ErrCast, fnName)
 		}
 		if _, ok := pMap[CMD]; !ok {
-			return nil, fmt.Errorf("comand %d in function %s has incorrect format 'cmd' key is missed", i, fnName)
+			return nil, fmt.Errorf(messages.ErrCmdMissed, i, fnName)
 		}
 		cmd := Command{
 			Params: map[string]interface{}{},
@@ -83,11 +112,6 @@ func ProcessFunc(fnName string, rawCmds []interface{}) ([]Command, error) {
 			switch pk {
 			case CMD:
 				cmd.CMD = pv.(string)
-				//if strings.HasPrefix(cmd.CMD, "#") {
-				//
-				//}
-			//case "id":
-			//	cmd.ID = pv.(string)
 			default:
 				cmd.Params[pk] = pv
 			}

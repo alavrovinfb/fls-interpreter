@@ -3,6 +3,8 @@ package script
 import (
 	"fmt"
 	"strings"
+
+	"github.com/alavrovinfb/fls-interpreter/pkg/messages"
 )
 
 // Operations constants
@@ -12,6 +14,9 @@ const (
 	UPDATE  = "update"
 	ADD     = "add"
 	PRINT   = "print"
+	SUB     = "subtract"
+	MUL     = "multiply"
+	DIV     = "divide"
 	VALUE   = "value"
 	OPERAND = "operand"
 )
@@ -34,14 +39,12 @@ const (
 )
 
 type Command struct {
-	Name       string
 	CMD        string
-	ID         string
 	Params     map[string]interface{}
 	ParentVars map[string]interface{}
 }
 
-func (c *Command) Do() error {
+func (c *Command) Do(out *[]interface{}) error {
 	vars := Vars.GetVars()
 	switch c.CMD {
 	case UPDATE:
@@ -68,13 +71,36 @@ func (c *Command) Do() error {
 	case PRINT:
 		v := c.processParams(UNARY)
 		fmt.Println(v[0])
+		*out = append(*out, v[0])
 	case DELETE:
 		id, err := c.getID()
 		if err != nil {
 			return err
 		}
 		delete(vars, id)
+	case SUB:
+		id, err := c.getID()
+		if err != nil {
+			return err
+		}
+		v := c.processParams(BINARY)
+		vars[id] = v[0] - v[1]
+	case MUL:
+		id, err := c.getID()
+		if err != nil {
+			return err
+		}
+		v := c.processParams(BINARY)
+		vars[id] = v[0] * v[1]
+	case DIV:
+		id, err := c.getID()
+		if err != nil {
+			return err
+		}
+		v := c.processParams(BINARY)
+		vars[id] = v[0] / v[1]
 	}
+	// subtract, multiply, divide
 	return nil
 }
 
@@ -88,7 +114,7 @@ func (c *Command) getID() (string, error) {
 			case string:
 				return typedRefID, nil
 			default:
-				return "", fmt.Errorf("incorrect id type %T", typedRefID)
+				return "", fmt.Errorf(messages.ErrIncorrectType, typedRefID, typedRefID)
 			}
 		} else {
 			return typedID, nil
@@ -126,7 +152,6 @@ func (c *Command) processParams(opType int) []Value {
 
 func resolveValue(v interface{}) Value {
 	vars := Vars.GetVars()
-	fmt.Println("vars in resolve", vars)
 	switch typedVal := v.(type) {
 	case float64:
 		return Value(typedVal)

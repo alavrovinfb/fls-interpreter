@@ -3,6 +3,10 @@ package script
 // var Variables map[string]Value
 var Vars *Variables
 
+func init() {
+	Vars = NewVariables()
+}
+
 type Variables struct {
 	V map[string]Value
 }
