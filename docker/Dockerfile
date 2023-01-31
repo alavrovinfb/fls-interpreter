@@ -5,8 +5,7 @@ ARG REPO
 
 LABEL stage=build-intermediate
 
-WORKDIR ${REPO}
-
+WORKDIR /go/src/github.com/alavrovinfb/fls-interpreter
 COPY . .
 RUN mkdir -p /go/bin/
 RUN CGO_ENABLED=0 GOOS=linux go build -o /go/bin/fls-interpreter ./cmd

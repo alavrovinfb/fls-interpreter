@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package flsinterpreter;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/struct.proto";
+
+
+option go_package = "github.com/alavrovinfb/fls-interpreter/pkg/pb;pb";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+
+  info: {
+    title: "FLS Interpreter Service"
+    description: "FLS Interpreter Service provides the capability to execute FLS scripts"
+    version: "v0.1.0"
+  };
+  schemes: HTTP;
+  schemes: HTTPS;
+  base_path: "/v1/";
+};
+
+// TODO: Write a protobuf schema for the FlsInterpreter service. The
+// messages and RPCs will compose the API for the service.
+
+// TODO: Structure your own protobuf messages. Each protocol buffer message is a
+// small logical record of information, containing a series of name-value pairs.
+message VersionResponse {
+  string version = 1;
+}
+
+message ScriptRequest {
+  // FLS script payload
+  // input is a JSON script
+  // param in body
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "FLS script payload"
+      description: "FLS script payload, input is a JSON script "
+    }
+    example: "{\n  \"var1\":1,\n  \"var2\":2,\n  \n  \"init\": [\n    {\"cmd\" : \"#setup\" }\n  ],\n  \n  \"setup\": [\n    {\"cmd\":\"update\", \"id\": \"var1\", \"value\":3.5},\n    {\"cmd\":\"print\", \"value\": \"#var1\"},\n    {\"cmd\":\"#sum\", \"id\": \"var1\", \"value1\":\"#var1\", \"value2\":\"#var2\"},\n    {\"cmd\":\"print\", \"value\": \"#var1\"},\n    {\"cmd\":\"create\", \"id\": \"var3\", \"value\":5},\n    {\"cmd\":\"delete\", \"id\": \"var1\"},\n    {\"cmd\":\"#printAll\"}\n  ],\n  \n  \"sum\": [\n      {\"cmd\":\"add\", \"id\": \"$id\", \"operand1\":\"$value1\", \"operand2\":\"$value2\"}\n  ],\n\n  \"printAll\":\n  [\n    {\"cmd\":\"print\", \"value\": \"#var1\"},\n    {\"cmd\":\"print\", \"value\": \"#var2\"},\n    {\"cmd\":\"print\", \"value\": \"#var3\"}\n  ]\n}"
+  };
+  google.protobuf.Struct script = 1;
+}
+
+message ScriptResponse {
+  // FLS script execution results
+  repeated string result = 1;
+}
+
+// TODO: Define the FlsInterpreter service and its methods. Feel free
+// to change the name of FlsInterpreter to better-suit your naming
+// conventions.
+service FlsInterpreter {
+  /*
+    Return service version
+   */
+  rpc GetVersion (google.protobuf.Empty) returns (VersionResponse) {
+    option (google.api.http) = {
+      get: "/v1/version"
+    };
+  }
+  /*
+  Execute FLS scrips
+ */
+  rpc ScriptExecute (ScriptRequest) returns (ScriptResponse) {
+    option (google.api.http) = {
+      post: "/v1/scripts"
+      body: "*"
+    };
+  }
+}

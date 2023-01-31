@@ -1,0 +1,180 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "FLS Interpreter Service provides the capability to execute FLS scripts",
+    "title": "FLS Interpreter Service",
+    "version": "v0.1.0"
+  },
+  "basePath": "/v1/",
+  "paths": {
+    "/v1/scripts": {
+      "post": {
+        "tags": [
+          "FlsInterpreter"
+        ],
+        "summary": "Execute FLS scrips",
+        "operationId": "FlsInterpreter_ScriptExecute",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/flsinterpreterScriptRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/flsinterpreterScriptResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/v1/version": {
+      "get": {
+        "tags": [
+          "FlsInterpreter"
+        ],
+        "summary": "Return service version",
+        "operationId": "FlsInterpreter_GetVersion",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/flsinterpreterVersionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "flsinterpreterScriptRequest": {
+      "description": "FLS script payload, input is a JSON script ",
+      "type": "object",
+      "title": "FLS script payload",
+      "properties": {
+        "script": {
+          "type": "object"
+        }
+      },
+      "example": {
+        "init": [
+          {
+            "cmd": "#setup"
+          }
+        ],
+        "printAll": [
+          {
+            "cmd": "print",
+            "value": "#var1"
+          },
+          {
+            "cmd": "print",
+            "value": "#var2"
+          },
+          {
+            "cmd": "print",
+            "value": "#var3"
+          }
+        ],
+        "setup": [
+          {
+            "cmd": "update",
+            "id": "var1",
+            "value": 3.5
+          },
+          {
+            "cmd": "print",
+            "value": "#var1"
+          },
+          {
+            "cmd": "#sum",
+            "id": "var1",
+            "value1": "#var1",
+            "value2": "#var2"
+          },
+          {
+            "cmd": "print",
+            "value": "#var1"
+          },
+          {
+            "cmd": "create",
+            "id": "var3",
+            "value": 5
+          },
+          {
+            "cmd": "delete",
+            "id": "var1"
+          },
+          {
+            "cmd": "#printAll"
+          }
+        ],
+        "sum": [
+          {
+            "cmd": "add",
+            "id": "$id",
+            "operand1": "$value1",
+            "operand2": "$value2"
+          }
+        ],
+        "var1": 1,
+        "var2": 2
+      }
+    },
+    "flsinterpreterScriptResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "title": "FLS script execution results",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "flsinterpreterVersionResponse": {
+      "description": "TODO: Structure your own protobuf messages. Each protocol buffer message is a\nsmall logical record of information, containing a series of name-value pairs.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "rpcStatus": {}
+  },
+  "tags": [
+    {
+      "name": "FlsInterpreter"
+    }
+  ]
+}
