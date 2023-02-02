@@ -1,34 +1,31 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"log"
-	"strings"
 
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
+	"github.com/alavrovinfb/fls-interpreter/internal/server"
+)
+
+const (
+	cliMode    = "cli"
+	serverMode = "server"
 )
 
 func main() {
-	switch viper.GetString("mode") {
+	switch *flagMode {
 	case cliMode:
-		if err := cli(viper.GetStringSlice("script.files")); err != nil {
+		if err := cli(*flagScriptFiles); err != nil {
 			log.Fatal(err)
 		}
 	case serverMode:
-		fmt.Println("Server mode")
+		l := server.NewLogger(*flagLoggingLevel)
+		i := server.NewInterpreter(l, flagServerAddress, flagServerPort,
+			flagGatewayAddress, flagGatewayPort, flagGatewayURL,
+			flagInternalAddress, flagInternalPort, flagInternalHealth)
+		if err := i.Run(); err != nil {
+			log.Fatal(err)
+		}
 	default:
 		log.Fatal("unknown mod, could be either cli or server")
 	}
-}
-
-func init() {
-	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
-	pflag.Parse()
-	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
-		log.Fatal(err)
-	}
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 }

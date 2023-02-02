@@ -15,4 +15,4 @@ FROM alpine:latest AS runner
 
 WORKDIR /bin
 COPY --from=builder /go/bin/fls-interpreter .
-ENTRYPOINT ["fls-interpreter"]
+ENTRYPOINT ["fls-interpreter", "--mode=server"]

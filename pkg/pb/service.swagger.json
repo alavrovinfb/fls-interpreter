@@ -17,7 +17,30 @@
   },
   "basePath": "/v1/",
   "paths": {
-    "/v1/scripts": {
+    "/reset": {
+      "get": {
+        "tags": [
+          "FlsInterpreter"
+        ],
+        "summary": "Return service version",
+        "operationId": "FlsInterpreter_Reset",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/flsinterpreterResetResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        }
+      }
+    },
+    "/scripts": {
       "post": {
         "tags": [
           "FlsInterpreter"
@@ -50,7 +73,7 @@
         }
       }
     },
-    "/v1/version": {
+    "/version": {
       "get": {
         "tags": [
           "FlsInterpreter"
@@ -75,6 +98,18 @@
     }
   },
   "definitions": {
+    "flsinterpreterResetResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "flsinterpreterScriptRequest": {
       "description": "FLS script payload, input is a JSON script ",
       "type": "object",
@@ -85,68 +120,71 @@
         }
       },
       "example": {
-        "init": [
-          {
-            "cmd": "#setup"
-          }
-        ],
-        "printAll": [
-          {
-            "cmd": "print",
-            "value": "#var1"
-          },
-          {
-            "cmd": "print",
-            "value": "#var2"
-          },
-          {
-            "cmd": "print",
-            "value": "#var3"
-          }
-        ],
-        "setup": [
-          {
-            "cmd": "update",
-            "id": "var1",
-            "value": 3.5
-          },
-          {
-            "cmd": "print",
-            "value": "#var1"
-          },
-          {
-            "cmd": "#sum",
-            "id": "var1",
-            "value1": "#var1",
-            "value2": "#var2"
-          },
-          {
-            "cmd": "print",
-            "value": "#var1"
-          },
-          {
-            "cmd": "create",
-            "id": "var3",
-            "value": 5
-          },
-          {
-            "cmd": "delete",
-            "id": "var1"
-          },
-          {
-            "cmd": "#printAll"
-          }
-        ],
-        "sum": [
-          {
-            "cmd": "add",
-            "id": "$id",
-            "operand1": "$value1",
-            "operand2": "$value2"
-          }
-        ],
-        "var1": 1,
-        "var2": 2
+        "script": {
+          "init": [
+            {
+              "cmd": "#setup"
+            }
+          ],
+          "printAll": [
+            {
+              "cmd": "print",
+              "value": "#var1"
+            },
+            {
+              "cmd": "print",
+              "value": "#var2"
+            },
+            {
+              "cmd": "print",
+              "value": "#var3"
+            }
+          ],
+          "setup": [
+            {
+              "cmd": "update",
+              "id": "var1",
+              "value": 3.5
+            },
+            {
+              "cmd": "print",
+              "value": "#var1"
+            },
+            {
+              "cmd": "#sum",
+              "id": "var1",
+              "value1": "#var1",
+              "value2": "#var2"
+            },
+            {
+              "cmd": "print",
+              "value": "#var1"
+            },
+            {
+              "cmd": "create",
+              "id": "var3",
+              "value": 5
+            },
+            {
+              "cmd": "delete",
+              "id": "var1"
+            },
+            {
+              "cmd": "#printAll"
+            }
+          ],
+          "sum": [
+            {
+              "cmd": "add",
+              "id": "$id",
+              "operand1": "$value1",
+              "operand2": "$value2"
+            }
+          ],
+          "var1": 1,
+          "var2": 2,
+          "var5": 5
+        }
       }
     },
     "flsinterpreterScriptResponse": {
@@ -156,7 +194,7 @@
           "type": "array",
           "title": "FLS script execution results",
           "items": {
-            "type": "string"
+            "type": "object"
           }
         }
       }

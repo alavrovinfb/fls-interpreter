@@ -1,8 +1,11 @@
 package script
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
+	"sync"
 
 	"github.com/alavrovinfb/fls-interpreter/pkg/messages"
 )
@@ -14,10 +17,13 @@ func init() {
 }
 
 type Script struct {
+	sync.RWMutex
 	Funcs map[string]*Func
 	Out   *[]interface{}
 }
 
+// A NewScript creates a new script instance
+// it returns the new script instance
 func NewScript() *Script {
 	return &Script{
 		Funcs: make(map[string]*Func, 0),
@@ -120,4 +126,27 @@ func ProcessFunc(fnName string, rawCmds []interface{}) ([]Command, error) {
 	}
 
 	return cmds, nil
+}
+
+func (s *Script) Run(r io.Reader) error {
+	jDec := json.NewDecoder(r)
+	docMap := make(map[string]interface{})
+	if err := jDec.Decode(&docMap); err != nil {
+		return err
+	}
+	if err := Parse(docMap, Vars, Body); err != nil {
+		return err
+	}
+	Body.RestOut()
+	if err := Body.Execute(InitFunc, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Script) Reset() {
+	s.RLock()
+	defer s.RUnlock()
+	s.Funcs = make(map[string]*Func)
 }

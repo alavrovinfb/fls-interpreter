@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "chart.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "chart.fullname" . }}
+      app.kubernetes.io/name: {{ include "chart.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.internal.port | quote }}
+      labels:
+        app: {{ include "chart.fullname" . }}
+        app.kubernetes.io/name: {{ include "chart.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- if .Values.rbac.enable }}
+      serviceAccountName: {{ include "chart.fullname" . }}-serviceaccount
+      {{- end }}
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      securityContext:
+      {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.Version }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.service.grpcPort }}
+              protocol: {{ .Values.grpcProtocol }}
+            - name: http
+              containerPort: {{ .Values.service.httpPort }}
+              protocol: {{ .Values.httpProtocol }}
+            - name: internal
+              containerPort: {{ .Values.internal.port }}
+          args:
+            - --logging.level={{ .Values.logging.level }}
+            - --server.port={{ .Values.service.grpcPort | default "9090" }}
+            - --gateway.port={{ .Values.service.httpPort | default "8080" }}
+            - --internal.port={{ .Values.internal.port | default "8081" }}
+{{- if .Values.internal.enable }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.internal.port }}
+              scheme: HTTP
+            initialDelaySeconds: 3
+            timeoutSeconds: 10
+{{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

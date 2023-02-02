@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"time"
@@ -7,7 +7,6 @@ import (
 	"github.com/alavrovinfb/fls-interpreter/pkg/svc"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
-	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -31,9 +30,6 @@ func NewGRPCServer(logger *logrus.Logger) (*grpc.Server, error) {
 
 				// Metrics middleware
 				grpc_prometheus.UnaryServerInterceptor,
-
-				// validation middleware
-				grpc_validator.UnaryServerInterceptor(),
 			),
 		),
 	)

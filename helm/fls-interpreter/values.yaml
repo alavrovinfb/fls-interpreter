@@ -1,0 +1,73 @@
+# Default values for fls-interpreter.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+httpProtocol: TCP
+grpcProtocol: TCP
+replicaCount: 1
+
+image:
+  tag: ""
+  repository: alavrovinfb/fls-interpreter
+  pullPolicy: Always
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  name: fls-interpreter
+  type: ClusterIP
+  grpcPort: 9090
+  httpPort: 8080
+
+internal:
+  enable: true
+  port: 8081
+
+rbac:
+  enable: false
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: "{{ .Values.env }}.{{ .Values.zone }}"
+      paths:
+        - path: "/fls-interpreter/v1/"
+          name: "{{ include \"chart.fullname\" . }}"
+          port: "{{ .Values.service.httpPort }}"
+
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+   limits:
+     cpu: 100m
+     memory: 128Mi
+   requests:
+     cpu: 100m
+     memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+securityContext:
+  readOnlyRootFilesystem: true
+
+podSecurityContext:
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+logging:
+  level: info
+
+authURL: ""

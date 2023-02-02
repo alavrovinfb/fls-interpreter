@@ -40,14 +40,19 @@ message ScriptRequest {
       title: "FLS script payload"
       description: "FLS script payload, input is a JSON script "
     }
-    example: "{\n  \"var1\":1,\n  \"var2\":2,\n  \n  \"init\": [\n    {\"cmd\" : \"#setup\" }\n  ],\n  \n  \"setup\": [\n    {\"cmd\":\"update\", \"id\": \"var1\", \"value\":3.5},\n    {\"cmd\":\"print\", \"value\": \"#var1\"},\n    {\"cmd\":\"#sum\", \"id\": \"var1\", \"value1\":\"#var1\", \"value2\":\"#var2\"},\n    {\"cmd\":\"print\", \"value\": \"#var1\"},\n    {\"cmd\":\"create\", \"id\": \"var3\", \"value\":5},\n    {\"cmd\":\"delete\", \"id\": \"var1\"},\n    {\"cmd\":\"#printAll\"}\n  ],\n  \n  \"sum\": [\n      {\"cmd\":\"add\", \"id\": \"$id\", \"operand1\":\"$value1\", \"operand2\":\"$value2\"}\n  ],\n\n  \"printAll\":\n  [\n    {\"cmd\":\"print\", \"value\": \"#var1\"},\n    {\"cmd\":\"print\", \"value\": \"#var2\"},\n    {\"cmd\":\"print\", \"value\": \"#var3\"}\n  ]\n}"
+    example: "{\n  \"script\": {\n    \"var1\": 1,\n    \"var2\": 2,\n    \"var5\": 5,\n    \"init\": [\n      {\n        \"cmd\": \"#setup\"\n      }\n    ],\n    \"setup\": [\n      {\n        \"cmd\": \"update\",\n        \"id\": \"var1\",\n        \"value\": 3.5\n      },\n      {\n        \"cmd\": \"print\",\n        \"value\": \"#var1\"\n      },\n      {\n        \"cmd\": \"#sum\",\n        \"id\": \"var1\",\n        \"value1\": \"#var1\",\n        \"value2\": \"#var2\"\n      },\n      {\n        \"cmd\": \"print\",\n        \"value\": \"#var1\"\n      },\n      {\n        \"cmd\": \"create\",\n        \"id\": \"var3\",\n        \"value\": 5\n      },\n      {\n        \"cmd\": \"delete\",\n        \"id\": \"var1\"\n      },\n      {\n        \"cmd\": \"#printAll\"\n      }\n    ],\n    \"sum\": [\n      {\n        \"cmd\": \"add\",\n        \"id\": \"$id\",\n        \"operand1\": \"$value1\",\n        \"operand2\": \"$value2\"\n      }\n    ],\n    \"printAll\": [\n      {\n        \"cmd\": \"print\",\n        \"value\": \"#var1\"\n      },\n      {\n        \"cmd\": \"print\",\n        \"value\": \"#var2\"\n      },\n      {\n        \"cmd\": \"print\",\n        \"value\": \"#var3\"\n      }\n    ]\n  }\n}\n"
   };
-  google.protobuf.Struct script = 1;
+   google.protobuf.Struct script = 1;
 }
 
 message ScriptResponse {
   // FLS script execution results
-  repeated string result = 1;
+  repeated google.protobuf.Value result = 1;
+}
+
+message ResetResponse {
+  string message = 1;
+  int32 status = 2;
 }
 
 // TODO: Define the FlsInterpreter service and its methods. Feel free
@@ -59,7 +64,7 @@ service FlsInterpreter {
    */
   rpc GetVersion (google.protobuf.Empty) returns (VersionResponse) {
     option (google.api.http) = {
-      get: "/v1/version"
+      get: "/version"
     };
   }
   /*
@@ -67,8 +72,16 @@ service FlsInterpreter {
  */
   rpc ScriptExecute (ScriptRequest) returns (ScriptResponse) {
     option (google.api.http) = {
-      post: "/v1/scripts"
+      post: "/scripts"
       body: "*"
+    };
+  }
+  /*
+  Return service version
+ */
+  rpc Reset (google.protobuf.Empty) returns (ResetResponse) {
+    option (google.api.http) = {
+      get: "/reset"
     };
   }
 }

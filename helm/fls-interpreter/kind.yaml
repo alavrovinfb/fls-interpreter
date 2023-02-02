@@ -1,0 +1,25 @@
+version: latest
+docker:
+  registry: ""
+  username: ""
+  password: ""
+
+rbac:
+  enable: true
+
+#### Values that will be populated from env values
+env: "kind"
+zone: "local"
+
+image:
+  pullPolicy: Never
+
+internal:
+  enable: false
+  port: 8081
+
+secrets:
+  enabled: true
+
+logging:
+  level: debug

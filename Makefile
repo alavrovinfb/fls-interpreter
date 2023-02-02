@@ -1,9 +1,9 @@
 PROJECT_ROOT            ?= github.com/alavrovinfb/fls-interpreter
-#$(PWD)
-#github.com/fls-interpreter
+
 BUILD_PATH              ?= bin
 DOCKERFILE_PATH         := ./docker
 DOCKER_FILE			    := $(DOCKERFILE_PATH)/Dockerfile
+CHART_DIR               := helm/fls-interpreter
 
 # configuration for the protobuf gentool
 SRCROOT_ON_HOST         := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -12,6 +12,7 @@ DOCKER_RUNNER           ?= docker run --rm -u `id -u`:`id -g` -e GOCACHE=/go -e 
 DOCKER_RUNNER           += -v $(SRCROOT_ON_HOST):$(SRCROOT_IN_CONTAINER)
 DOCKER_GENERATOR        := infoblox/atlas-gentool:v27
 GENERATOR               := $(DOCKER_RUNNER) $(DOCKER_GENERATOR)
+KUBESCORE               := $(DOCKER_RUNNER) zegl/kube-score score -
 
 PROTOBUF_ARGS =	 -I=$(PROJECT_ROOT)/vendor
 PROTOBUF_ARGS += --go_out=.
@@ -32,11 +33,14 @@ BUILD_NUMBER        	?= 0
 IMAGE_REGISTRY 			?= $(USERNAME)
 IMAGE_NAME              ?= $(IMAGE_REGISTRY)/$(SERVICE_NAME)
 
+TEST_CLUSTER            ?= test-cluster
+NAMESPACE               ?= fls
+
 .PHONY test:
 test:
 	@go test ./... -cover
 .PHONY build-local:
-build-local:
+build-local: vendor
 	@go build -o bin/fls-interpreter ./cmd
 
 .PHONY run-local:
@@ -44,7 +48,7 @@ run-local:
 	@go run ./cmd --script.files="example/sample-script.txt"
 
 .PHONY build-docker: test
-build-docker:
+build-docker: vendor
 	@docker build --build-arg REPO="${PROJECT_ROOT}" \
 		-f $(DOCKER_FILE) \
 		-t $(IMAGE_NAME):latest \
@@ -58,6 +62,32 @@ vendor:
 
 .PHONY protobuf:
 protobuf:
-	$(GENERATOR) \
+	@$(GENERATOR) \
 	$(PROTOBUF_ARGS) \
 	$(PROJECT_ROOT)/pkg/pb/service.proto
+
+.PHONY install-kind:
+install-kind:
+	@curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.17.0/kind-linux-amd64
+	@chmod +x ./kind
+	@sudo mv ./kind /usr/local/bin/kind
+	@kind --version
+
+kind-load: build-docker
+	@kind create cluster -n $(TEST_CLUSTER) --wait 30s | true
+	@kubectl config get-contexts
+	kind load docker-image $(IMAGE_NAME):$(IMAGE_VERSION) -n $(TEST_CLUSTER)
+
+.PHONY run-in-kind: kind-load
+run-in-kind:
+	@kubectl create namespace $(NAMESPACE) | true
+	helm upgrade -i \
+    		--namespace=$(NAMESPACE) \
+    		fls-interpreter \
+    		helm/fls-interpreter \
+    		--set image.repository=$(IMAGE_NAME),image.tag=$(IMAGE_VERSION) \
+    		-f helm/fls-interpreter/kind.yaml --debug
+	@kubectl rollout status -w --timeout=120s deployment fls-interpreter -n $(NAMESPACE)
+
+kind-destroy:
+	@kind delete cluster -n $(TEST_CLUSTER)

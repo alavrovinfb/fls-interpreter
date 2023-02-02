@@ -25,6 +25,9 @@ type FlsInterpreterClient interface {
 	//
 	//Execute FLS scrips
 	ScriptExecute(ctx context.Context, in *ScriptRequest, opts ...grpc.CallOption) (*ScriptResponse, error)
+	//
+	//Return service version
+	Reset(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ResetResponse, error)
 }
 
 type flsInterpreterClient struct {
@@ -53,6 +56,15 @@ func (c *flsInterpreterClient) ScriptExecute(ctx context.Context, in *ScriptRequ
 	return out, nil
 }
 
+func (c *flsInterpreterClient) Reset(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ResetResponse, error) {
+	out := new(ResetResponse)
+	err := c.cc.Invoke(ctx, "/flsinterpreter.FlsInterpreter/Reset", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FlsInterpreterServer is the server API for FlsInterpreter service.
 // All implementations should embed UnimplementedFlsInterpreterServer
 // for forward compatibility
@@ -63,6 +75,9 @@ type FlsInterpreterServer interface {
 	//
 	//Execute FLS scrips
 	ScriptExecute(context.Context, *ScriptRequest) (*ScriptResponse, error)
+	//
+	//Return service version
+	Reset(context.Context, *emptypb.Empty) (*ResetResponse, error)
 }
 
 // UnimplementedFlsInterpreterServer should be embedded to have forward compatible implementations.
@@ -74,6 +89,9 @@ func (UnimplementedFlsInterpreterServer) GetVersion(context.Context, *emptypb.Em
 }
 func (UnimplementedFlsInterpreterServer) ScriptExecute(context.Context, *ScriptRequest) (*ScriptResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ScriptExecute not implemented")
+}
+func (UnimplementedFlsInterpreterServer) Reset(context.Context, *emptypb.Empty) (*ResetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Reset not implemented")
 }
 
 // UnsafeFlsInterpreterServer may be embedded to opt out of forward compatibility for this service.
@@ -123,6 +141,24 @@ func _FlsInterpreter_ScriptExecute_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FlsInterpreter_Reset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FlsInterpreterServer).Reset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/flsinterpreter.FlsInterpreter/Reset",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FlsInterpreterServer).Reset(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FlsInterpreter_ServiceDesc is the grpc.ServiceDesc for FlsInterpreter service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -137,6 +173,10 @@ var FlsInterpreter_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ScriptExecute",
 			Handler:    _FlsInterpreter_ScriptExecute_Handler,
+		},
+		{
+			MethodName: "Reset",
+			Handler:    _FlsInterpreter_Reset_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
