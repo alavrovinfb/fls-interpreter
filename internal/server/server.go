@@ -13,9 +13,11 @@ import (
 
 	"github.com/alavrovinfb/fls-interpreter/pkg/pb"
 	"github.com/alavrovinfb/fls-interpreter/pkg/script"
+	_ "github.com/alavrovinfb/fls-interpreter/statik"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -160,13 +162,21 @@ func (is *Interpreter) gatewayServe() error {
 		return err
 	}
 
-	prefix := *is.gatewayEndpoint
-	mux := http.NewServeMux()
-	mux.Handle(prefix, http.StripPrefix(prefix[:len(prefix)-1], gmux))
-	gatewayAddr := net.JoinHostPort(*is.gatewayAddr, *is.gatewayPort)
-	if err := gmux.HandlePath("POST", "/files", handleBinaryFileUpload); err != nil {
+	statikFS, err := fs.New()
+	if err != nil {
+		logger.Error(err)
 		return err
 	}
+
+	prefix := *is.gatewayEndpoint
+	mux := http.NewServeMux()
+	mux.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(statikFS)))
+	mux.Handle(prefix, http.StripPrefix(prefix[:len(prefix)-1], gmux))
+	gatewayAddr := net.JoinHostPort(*is.gatewayAddr, *is.gatewayPort)
+	if err := gmux.HandlePath(http.MethodPost, "/files", handleBinaryFileUpload); err != nil {
+		return err
+	}
+
 	logger.Printf("serving http at %s", gatewayAddr)
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
 	return http.ListenAndServe(gatewayAddr, mux)

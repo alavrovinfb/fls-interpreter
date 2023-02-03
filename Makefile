@@ -39,8 +39,8 @@ NAMESPACE               ?= fls
 .PHONY test:
 test:
 	@go test ./... -cover
-.PHONY build-local:
-build-local: vendor
+.PHONY build-local: vendor test
+build-local:
 	@go build -o bin/fls-interpreter ./cmd
 
 .PHONY run-local:
@@ -65,6 +65,9 @@ protobuf:
 	@$(GENERATOR) \
 	$(PROTOBUF_ARGS) \
 	$(PROJECT_ROOT)/pkg/pb/service.proto
+	@cp pkg/pb/service.swagger.json swagger-ui/swagger.json
+	@cp pkg/pb/service.swagger.json docs/swagger.json
+	@statik -src=swagger-ui
 
 .PHONY install-kind:
 install-kind:
@@ -91,3 +94,6 @@ run-in-kind:
 
 kind-destroy:
 	@kind delete cluster -n $(TEST_CLUSTER)
+
+static-docs: protobuf
+	go doc -all ./pkg/script > ./docs/script.doc.txt
